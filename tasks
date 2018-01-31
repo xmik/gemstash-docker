@@ -1,0 +1,63 @@
+#!/bin/bash
+
+set -e
+
+image_dir="./image"
+version_file="${image_dir}/version.txt"
+
+command="$1"
+case "${command}" in
+  build)
+      # This is an automated build on docker hub, so
+      # 1. we cannot have complicated build script or use --build-arg.
+      # 2. the non-release commands must be invocable for anyone.
+      source "${version_file}"
+      cd ${image_dir}
+      docker build -t ${this_image_name}:${this_image_tag} --rm .
+      exit $?
+      ;;
+  test)
+      source "${version_file}"
+      echo "Testing image: ${this_image_name}:${this_image_tag}"
+      time bats "$(pwd)/test/integration/bats"
+      exit $?
+      ;;
+  set_version)
+      if [[ -n "$2" ]]; then
+        new_version="$2"
+      else
+        echo "Please set version explicitly, exit 1"
+        exit 1
+      fi
+
+      changelog_file="./CHANGELOG.md"
+      changelog_first_line=$(cat ${changelog_file} | head -1)
+      if [[ "${changelog_first_line}" == "### ${new_version} "* ]];then
+        # idempotent
+        echo "Version in changelog is already set"
+      else
+        release_date=$(LANG=en_US date +%Y-%b-%d)
+        new_line="### ${new_version} (${release_date})"
+        old_changelog=$(cat "${changelog_file}")
+        echo "${new_line}" > "${changelog_file}"
+        echo "" >> "${changelog_file}"
+        echo "${old_changelog}" >> "${changelog_file}"
+      fi
+      echo "export this_image_tag=${new_version}" > ${version_file}
+      echo "export this_image_name=xmik/gemstash" >> ${version_file}
+      echo "Version is set to: ${new_version}"
+      exit $?
+      ;;
+  release)
+      source "${version_file}"
+      git tag "${this_image_tag}"
+      git push origin "tags/${this_image_tag}"
+      exit $?
+      ;;
+  # no publish task, the automated docker build is responsible for it
+  *)
+      echo "Invalid command: '${command}'"
+      exit 1
+      ;;
+esac
+set +e

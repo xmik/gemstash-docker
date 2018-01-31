@@ -1,0 +1,2 @@
+export this_image_tag=0.2.0
+export this_image_name=xmik/gemstash

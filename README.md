@@ -4,17 +4,10 @@ Gemstash is a ruby gems source (https://rubygems.org for instance) caching mirro
 
 This project allows to run it in a docker container.
 
-## Requirements
-
-Docker
-
-## Deploy
-
-On the server:
+## Usage
 
 ```
-docker create -v /root/.gemstash --name gemstash_data artemave/gemstash
-docker run -d -p '9292:9292' --restart=always --volumes-from gemstash_data --name gemstash_server artemave/gemstash
+docker run -d -p '9292:9292' -v /tmp/gemstash-data:/root/.gemstash --name gemstash xmik/gemstash
 ```
 
 ### Custom config
@@ -38,3 +31,10 @@ Some other settings (for instance postgres, memcached) might also change the way
 ### Db backup
 
 https://docs.docker.com/engine/userguide/dockervolumes/#backup-restore-or-migrate-data-volumes
+
+
+## Development
+```
+./tasks build # build docker image
+./tasks test # run Bats tests
+```
